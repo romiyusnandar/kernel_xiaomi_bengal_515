@@ -1715,8 +1715,7 @@ static void trace_create_maxlat_file(struct trace_array *tr,
 {
 	INIT_WORK(&tr->fsnotify_work, latency_fsnotify_workfn);
 	init_irq_work(&tr->fsnotify_irqwork, latency_fsnotify_workfn_irq);
-	tr->d_max_latency = trace_create_file("tracing_max_latency",
-					      TRACE_MODE_WRITE,
+	tr->d_max_latency = trace_create_file("tracing_max_latency", 0644,
 					      d_tracer, tr,
 					      &tracing_max_lat_fops);
 }
@@ -1749,7 +1748,7 @@ void latency_fsnotify(struct trace_array *tr)
 #else /* !LATENCY_FS_NOTIFY */
 
 #define trace_create_maxlat_file(tr, d_tracer)				\
-	trace_create_file("tracing_max_latency", TRACE_MODE_WRITE,	\
+	trace_create_file("tracing_max_latency", 0644,			\
 			  d_tracer, tr, &tracing_max_lat_fops)
 
 #endif
