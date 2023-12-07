@@ -133,7 +133,7 @@ a maintainer tree)
 - If the patch is fixing a bug to Android-specific code
     - tag the patch subject with `ANDROID:`
     - add a `Fixes:` tag that cites the patch with the bug
-    - Example:
+    - Examples:
 ```
         ANDROID: fix android-specific bug in foobar.c
 
