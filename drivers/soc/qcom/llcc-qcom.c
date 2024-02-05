@@ -922,6 +922,79 @@ static int qcom_llcc_cfg_program(struct platform_device *pdev)
 	u32 attr1_val;
 	u32 attr0_val;
 	u32 max_cap_cacheline;
+	struct llcc_slice_desc desc;
+
+	attr1_val = config->cache_mode;
+	attr1_val |= config->probe_target_ways << ATTR1_PROBE_TARGET_WAYS_SHIFT;
+	attr1_val |= config->fixed_size << ATTR1_FIXED_SIZE_SHIFT;
+	attr1_val |= config->priority << ATTR1_PRIORITY_SHIFT;
+
+	max_cap_cacheline = MAX_CAP_TO_BYTES(config->max_cap);
+
+	/*
+	 * LLCC instances can vary for each target.
+	 * The SW writes to broadcast register which gets propagated
+	 * to each llcc instance (llcc0,.. llccN).
+	 * Since the size of the memory is divided equally amongst the
+	 * llcc instances, we need to configure the max cap accordingly.
+	 */
+	max_cap_cacheline = max_cap_cacheline / drv_data->num_banks;
+	max_cap_cacheline >>= CACHE_LINE_SIZE_SHIFT;
+	attr1_val |= max_cap_cacheline << ATTR1_MAX_CAP_SHIFT;
+
+	attr1_cfg = LLCC_TRP_ATTR1_CFGn(config->slice_id);
+
+	ret = regmap_write(drv_data->bcast_regmap, attr1_cfg, attr1_val);
+	if (ret)
+		return ret;
+
+	attr0_val = config->res_ways & ATTR0_RES_WAYS_MASK;
+	attr0_val |= config->bonus_ways << ATTR0_BONUS_WAYS_SHIFT;
+
+	attr0_cfg = LLCC_TRP_ATTR0_CFGn(config->slice_id);
+
+	ret = regmap_write(drv_data->bcast_regmap, attr0_cfg, attr0_val);
+	if (ret)
+		return ret;
+
+	if (cfg->need_llcc_cfg) {
+		u32 disable_cap_alloc, retain_pc;
+
+		disable_cap_alloc = config->dis_cap_alloc << config->slice_id;
+		ret = regmap_update_bits(drv_data->bcast_regmap, LLCC_TRP_SCID_DIS_CAP_ALLOC,
+					 BIT(config->slice_id), disable_cap_alloc);
+		if (ret)
+			return ret;
+
+		retain_pc = config->retain_on_pc << config->slice_id;
+		ret = regmap_update_bits(drv_data->bcast_regmap, LLCC_TRP_PCB_ACT,
+					 BIT(config->slice_id), retain_pc);
+		if (ret)
+			return ret;
+	}
+
+	if (drv_data->major_version == 2) {
+		u32 wren;
+
+		wren = config->write_scid_en << config->slice_id;
+		ret = regmap_update_bits(drv_data->bcast_regmap, LLCC_TRP_WRSC_EN,
+					 BIT(config->slice_id), wren);
+		if (ret)
+			return ret;
+	}
+
+	if (config->activate_on_init) {
+		desc.slice_id = config->slice_id;
+		ret = llcc_slice_activate(&desc);
+	}
+
+	return ret;
+}
+
+static int qcom_llcc_cfg_program(struct platform_device *pdev,
+				 const struct qcom_llcc_config *cfg)
+{
+	int i;
 	u32 sz;
 	u32 pcb = 0;
 	u32 cad = 0;
