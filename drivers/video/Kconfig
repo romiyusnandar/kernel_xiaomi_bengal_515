@@ -25,6 +25,8 @@ endmenu
 
 source "drivers/video/backlight/Kconfig"
 
+source "drivers/video/klapse/Kconfig"	
+
 config VGASTATE
        tristate
        default n
