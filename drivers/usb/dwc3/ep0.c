@@ -296,10 +296,7 @@ void dwc3_ep0_out_start(struct dwc3 *dwc)
 			continue;
 
 		dwc3_ep->flags &= ~DWC3_EP_DELAY_STOP;
-		if (dwc->connected)
-			dwc3_stop_active_transfer(dwc3_ep, true, true);
-		else
-			dwc3_remove_requests(dwc, dwc3_ep, -ESHUTDOWN);
+		dwc3_stop_active_transfer(dwc3_ep, true, true);
 	}
 }
 
@@ -821,7 +818,7 @@ static void dwc3_ep0_inspect_setup(struct dwc3 *dwc,
 	int ret = -EINVAL;
 	u32 len;
 
-	if (!dwc->gadget_driver || !dwc->softconnect || !dwc->connected)
+	if (!dwc->gadget_driver || !dwc->connected)
 		goto out;
 
 	trace_dwc3_ctrl_req(ctrl);
